@@ -6,7 +6,7 @@ A Class for the reading and storing of surgical video
 
 import cv2
 import os
-
+import shutil
 
 class VideoReader:
     """
@@ -34,6 +34,13 @@ class VideoReader:
 
         # In case video is stored
         self.video_data = None
+
+    def __del__(self):
+        """
+        Method to ensure saved frames are discarded
+        """
+        if self.on_disk and self.frames_path is not None:
+            shutil.rmtree(self.frames_path)
 
 
     def load_video(self,
@@ -89,6 +96,7 @@ class VideoReader:
 
             # Then, close the video
             self.video.release()
+            print("Video Frames extracted successfully")
 
         # If frames are not saved, video is not closed
 
