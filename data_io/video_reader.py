@@ -76,6 +76,10 @@ class VideoReader:
         self.frame_number = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
         self.frame_rate = self.video.get(cv2.CAP_PROP_FPS)
 
+        # And the image dimensions
+        self.image_width = self.video.get(cv2.CAP_PROP_FRAME_WIDTH)
+        self.image_height = self.video.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
         # Define the loading mode, whether from the video or from saved images
         self.on_disk = on_disk
         if self.on_disk:
@@ -101,3 +105,28 @@ class VideoReader:
         # If frames are not saved, video is not closed
 
         return 0
+
+
+    def load_image(self,
+                   frame_index):
+        """
+        Method to load an image
+        :param frame_index: index of the frame to be loaded
+        :return image: the RGB image of interest
+        """
+        # Check if frame is within bounds
+        if frame_index < 0 or frame_index >= self.frame_number:
+            raise ValueError("Frame index out of bounds")
+
+        # Now load the image
+        if self.on_disk:
+            # Load the image from files
+            image = cv2.imread(self.frames_path + "frame_" + str(frame_index) + ".jpg")
+        else:
+            # In case the video is open, with the on the fly option
+            check = self.video.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
+            status, image = self.video.read()
+
+        # return the image
+        return image
+
