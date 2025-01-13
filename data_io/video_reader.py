@@ -59,15 +59,9 @@ class VideoReader:
         else:
             self.video_path = video_path
 
-        # Extract video format and check whether it is valid
-        video_format = video_path[::-1][0:video_path[::-1].find('.') + 1][::-1]
-
-        # Create list of possible formats (can be updated)
-        possible_formats = [".mp4"]
-        if video_format not in possible_formats:
-            raise ValueError("Video format must be one of the list {}".format(possible_formats))
-        else:
-            self.video_format = video_format
+        # Check if video is valid
+        if not check_valid_formats(video_path):
+            raise ValueError("Video format is not valid.")
 
         # Open video reading object
         self.video = cv2.VideoCapture(video_path)
@@ -130,3 +124,19 @@ class VideoReader:
         # return the image
         return image
 
+
+def check_valid_formats(input_path):
+    """
+    Method to check if input complies with video formats
+    :param input_path: input path
+    :return: a boolean
+    """
+    # Extract video format and check whether it is valid
+    video_format = input_path[::-1][0:input_path[::-1].find('.') + 1][::-1]
+
+    # Create list of possible formats (can be updated)
+    possible_formats = [".mp4"]
+
+    # Check if it is in the list
+    check = video_format in possible_formats
+    return check
