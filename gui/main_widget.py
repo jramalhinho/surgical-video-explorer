@@ -5,7 +5,7 @@ Main widget class, where all everything is displayed
 """
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPixmap, QImage
-from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout, QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout, QFileDialog, QMessageBox, QComboBox
 import data_io.video_reader as vidr
 
 
@@ -23,18 +23,22 @@ class MainWidget(QWidget):
         self.load_button = QPushButton("Load Video")
         self.load_button.clicked.connect(self.on_load_button_click)
         # a label of "patient"
-        self.patient_label = QLabel("Patient:")
+        self.patient_label = QLabel("Patient ID:")
         self.patient_label.setFont(QFont("Arial", 12))
         # a display for video
         self.video_display = QLabel()
         # Buttons for playing and stepping
         self.next_button = QPushButton(">")
         self.next_button.clicked.connect(self.on_next_button_click)
+        self.next_button.setDisabled(True)
         self.prev_button = QPushButton("<")
         self.prev_button.clicked.connect(self.on_prev_button_click)
+        self.prev_button.setDisabled(True)
         self.play_button = QPushButton("Play")
-        self.prev_button.clicked.connext(self.on_play_button_click)
-
+        self.prev_button.clicked.connect(self.on_play_button_click)
+        self.play_button.setDisabled(True)
+        # Make a button with drop menu
+        self.sampling_button = QComboBox()
 
         # Position objects
         layout = QVBoxLayout()
@@ -43,6 +47,9 @@ class MainWidget(QWidget):
         layout.addWidget(self.patient_label)
         layout.addWidget(self.load_button)
         layout.addWidget(self.video_display)
+        layout.addWidget(self.next_button)
+        layout.addWidget(self.prev_button)
+        layout.addWidget(self.play_button)
 
         # Directory of data to display
         self.video_path = None
@@ -74,7 +81,7 @@ class MainWidget(QWidget):
         # Update patient code in the GUI
         patient_name = self.video_path.split("/")[-1]
         patient_name = patient_name.split(".")[0]
-        self.patient_label.setText("Patient: " + patient_name)
+        self.patient_label.setText("Patient ID: " + patient_name)
 
         # Update video viewer
         displayed_frame = self.video_reader.load_image(0)
@@ -83,6 +90,10 @@ class MainWidget(QWidget):
 
         # Update video frame being shown
         self.current_frame = 0
+
+        # Make play and next buttons togglable with qt
+        self.next_button.setDisabled(False)
+        self.play_button.setDisabled(False)
 
         return 0
 
