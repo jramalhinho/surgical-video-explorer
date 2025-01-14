@@ -99,13 +99,32 @@ class MainWidget(QWidget):
 
     def on_next_button_click(self):
         """
-
+        Method to advance one image in the video display
         """
+        # Update current frame, with current sampling rate
+        self.current_frame = min(self.current_frame + self.sampling_rate,
+                                 self.video_reader.frame_number - 1)
+
+        # Load the image and display
+        displayed_frame = self.video_reader.load_image(self.current_frame)
+        displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+        self.video_display.setPixmap(QPixmap(displayed_qimage))
+
+        return 0
 
     def on_prev_button_click(self):
         """
-
+        Method to retrocede one image in the video display
         """
+        # Update current frame, with current sampling rate
+        self.current_frame = max(self.current_frame - self.sampling_rate, 0)
+
+        # Load the image and display
+        displayed_frame = self.video_reader.load_image(self.current_frame)
+        displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+        self.video_display.setPixmap(QPixmap(displayed_qimage))
+
+        return 0
 
     def on_play_button_click(self):
         """
