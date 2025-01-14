@@ -3,10 +3,13 @@
 """
 Main widget class, where all everything is displayed
 """
+
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPixmap, QImage
 from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout, QFileDialog, QMessageBox, QComboBox
 import data_io.video_reader as vidr
+import threading
 
 
 class MainWidget(QWidget):
@@ -53,6 +56,7 @@ class MainWidget(QWidget):
 
         # Directory of data to display
         self.video_path = None
+        self.video_reader = None
 
         # Parameters on video display
         self.current_frame = None
