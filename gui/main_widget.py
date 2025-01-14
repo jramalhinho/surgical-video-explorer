@@ -20,7 +20,7 @@ class MainWidget(QWidget):
         super().__init__()
         # Define elements, first title
         self.setWindowTitle("Cholec80 Video Explorer")
-        self.setFixedSize(1920, 1080)
+        # self.setFixedSize(1920, 1080)
 
         # a button for loading video
         self.load_button = QPushButton("Load Video")
@@ -38,7 +38,7 @@ class MainWidget(QWidget):
         self.prev_button.clicked.connect(self.on_prev_button_click)
         self.prev_button.setDisabled(True)
         self.play_button = QPushButton("Play")
-        self.prev_button.clicked.connect(self.on_play_button_click)
+        self.play_button.clicked.connect(self.on_play_button_click)
         self.play_button.setDisabled(True)
         # Make a button with drop menu
         self.sampling_button = QComboBox()
@@ -61,6 +61,10 @@ class MainWidget(QWidget):
         # Parameters on video display
         self.current_frame = None
         self.sampling_rate = 1
+
+        # Threads
+        self.playing = False
+        self.play_thread = threading.Thread(target=self.play_video)
 
         # Show the widget to start
         self.show()
@@ -105,14 +109,17 @@ class MainWidget(QWidget):
         """
         Method to advance one image in the video display
         """
+        # Check if video thread is active
+        if self.playing:
+            # stop video playing
+            self.on_play_button_click()
+
         # Update current frame, with current sampling rate
         self.current_frame = min(self.current_frame + self.sampling_rate,
                                  self.video_reader.frame_number - 1)
 
-        # Load the image and display
-        displayed_frame = self.video_reader.load_image(self.current_frame)
-        displayed_qimage = convert_rgb_to_qimage(displayed_frame)
-        self.video_display.setPixmap(QPixmap(displayed_qimage))
+        # Update with the function
+        self.update_image(self.current_frame)
 
         return 0
 
@@ -120,20 +127,68 @@ class MainWidget(QWidget):
         """
         Method to retrocede one image in the video display
         """
+        # Check if video thread is active
+        if self.playing:
+            # stop video playing
+            self.on_play_button_click()
+
         # Update current frame, with current sampling rate
         self.current_frame = max(self.current_frame - self.sampling_rate, 0)
 
-        # Load the image and display
-        displayed_frame = self.video_reader.load_image(self.current_frame)
-        displayed_qimage = convert_rgb_to_qimage(displayed_frame)
-        self.video_display.setPixmap(QPixmap(displayed_qimage))
+        # Update with the function
+        self.update_image(self.current_frame)
 
         return 0
 
     def on_play_button_click(self):
         """
-
+        Button to play and stop video
         """
+        # Video is played starting from the current point with a thread
+        if not self.playing:
+            self.playing = True
+            self.play_thread.start()
+            self.play_button.setText("Playing")
+        else:
+            self.playing = False
+            self.play_thread.join()
+            self.play_button.setText("Play")
+            # Restart the thread
+            self.play_thread = threading.Thread(target=self.play_video)
+
+
+    def play_video(self):
+        """
+        Thread to play video
+        """
+        # Loop to update video
+        while self.current_frame <= self.video_reader.frame_number:
+            self.current_frame = min(self.current_frame + self.sampling_rate,
+                                     self.video_reader.frame_number - 1)
+            # Update
+            self.update_image(self.current_frame)
+            # time.sleep(0.01)
+            if not self.playing:
+                break
+
+        return 0
+
+
+    def update_image(self,
+                     frame):
+        """
+        Method to change the display on the current video overlay
+        :param current_frame: the frame to display
+        """
+        # Load the image and display
+        displayed_frame = self.video_reader.load_image(frame)
+        # Convert to QImage
+        displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+        self.video_display.setPixmap(QPixmap(displayed_qimage))
+
+        return 0
+
+
 
 def convert_rgb_to_qimage(rgb):
     """

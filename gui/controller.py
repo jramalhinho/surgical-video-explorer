@@ -33,12 +33,12 @@ class ThreadManager:
                     self.widget.prev_button.setDisabled(False)
 
                 if self.widget.current_frame == self.widget.video_reader.frame_number - 1:
-                    self.widget.prev_button.setDisabled(True)
+                    self.widget.next_button.setDisabled(True)
                 else:
-                    self.widget.prev_button.setDisabled(False)
+                    self.widget.next_button.setDisabled(False)
 
     def finish_threads(self):
         """
         Place-holder to finish all these threads
         """
-        
+
