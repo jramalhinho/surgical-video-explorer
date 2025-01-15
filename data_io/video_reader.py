@@ -12,13 +12,12 @@ class VideoReader:
     """
     Class that holds tools for reading and sampling of videos
     """
-    def __init__(self,
-                 display_rate=None,
-                 display_dims=None):
+    def __init__(self):
         # Define properties
         self.video_path = None
         self.video_format = None
         self.on_disk = False
+        self.delete_from_disk = False
         self.frames_path = None
 
         # On the video
@@ -27,20 +26,8 @@ class VideoReader:
         self.image_width = None
         self.image_height = None
 
-        # For further display
-        self.display_rate = None
-        self.display_width = None
-        self.display_height = None
-
         # In case video is stored
         self.video_data = None
-
-    def __del__(self):
-        """
-        Method to ensure saved frames are discarded
-        """
-        if self.on_disk and self.frames_path is not None:
-            shutil.rmtree(self.frames_path)
 
 
     def load_video(self,
@@ -51,8 +38,8 @@ class VideoReader:
         :param video_path: path of the video file
         :param video_format: format of the video file
         :param on_disk: boolean to decide if frames are extracted to disk
+        :param delete_from_disk: boolean to decide if frames are deleted in the end
         """
-
         # Check if video path exists
         if not os.path.exists(video_path):
             raise ValueError('Video file not found')
@@ -81,23 +68,22 @@ class VideoReader:
             video_dir = os.path.abspath(os.path.join(video_path, os.pardir))
             self.frames_path = video_dir + "/frames/"
             if not os.path.isdir(self.frames_path):
+                # If the frames do not exist yet
                 os.mkdir(self.frames_path)
-
-            counter = 0
-            status = True
-            while status:
-                # Read image and
-                status, frame = self.video.read()
-                if status:
-                    cv2.imwrite(self.frames_path + "frame_" + str(counter) + ".jpg", frame)
-                    counter = counter + 1
+                counter = 0
+                status = True
+                while status:
+                    # Read image and
+                    status, frame = self.video.read()
+                    if status:
+                        cv2.imwrite(self.frames_path + "frame_" + str(counter) + ".jpg", frame)
+                        counter = counter + 1
 
             # Then, close the video
             self.video.release()
             print("Video Frames extracted successfully")
 
         # If frames are not saved, video is not closed
-
         return 0
 
 

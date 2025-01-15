@@ -5,12 +5,14 @@ Main widget class, where all everything is displayed
 """
 
 
+import threading
+import shutil
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPixmap, QImage
 from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout, QFileDialog, QMessageBox, QComboBox, QHBoxLayout, \
     QLineEdit
 import data_io.video_reader as vidr
-import threading
+
 
 
 class MainWidget(QWidget):
@@ -147,8 +149,12 @@ class MainWidget(QWidget):
             # return to stop
             return 0
 
+        # Change text of button
+        self.load_button.setText("Loading")
         self.video_reader = vidr.VideoReader()
-        self.video_reader.load_video(video_path=self.video_path)
+        self.video_reader.load_video(video_path=self.video_path,
+                                     on_disk=True)
+        self.load_button.setText("Load Video")
 
         # Update patient code in the GUI
         patient_name = self.video_path.split("/")[-1]
@@ -255,7 +261,6 @@ class MainWidget(QWidget):
         self.video_display.setPixmap(QPixmap(displayed_qimage))
 
         return 0
-
 
 
 def convert_rgb_to_qimage(rgb):
