@@ -16,8 +16,6 @@ class VideoReader:
         # Define properties
         self.video_path = None
         self.video_format = None
-        self.on_disk = False
-        self.delete_from_disk = False
         self.frames_path = None
 
         # On the video
@@ -31,8 +29,7 @@ class VideoReader:
 
 
     def load_video(self,
-                   video_path,
-                   on_disk=False):
+                   video_path):
         """
         Function to load a video
         :param video_path: path of the video file
@@ -53,37 +50,39 @@ class VideoReader:
         # Open video reading object
         self.video = cv2.VideoCapture(video_path)
 
-        # Get number of frames and frame rate
-        self.frame_number = int(self.video.get(cv2.CAP_PROP_FRAME_COUNT))
+        # Get frame rate
         self.frame_rate = self.video.get(cv2.CAP_PROP_FPS)
 
         # And the image dimensions
         self.image_width = self.video.get(cv2.CAP_PROP_FRAME_WIDTH)
         self.image_height = self.video.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
-        # Define the loading mode, whether from the video or from saved images
-        self.on_disk = on_disk
-        if self.on_disk:
-            # Save images to a path
-            video_dir = os.path.abspath(os.path.join(video_path, os.pardir))
-            self.frames_path = video_dir + "/frames/"
-            if not os.path.isdir(self.frames_path):
-                # If the frames do not exist yet
-                os.mkdir(self.frames_path)
-                counter = 0
-                status = True
-                while status:
-                    # Read image and
-                    status, frame = self.video.read()
-                    if status:
-                        cv2.imwrite(self.frames_path + "frame_" + str(counter) + ".jpg", frame)
-                        counter = counter + 1
+        # Save images to a path
+        video_dir = os.path.abspath(os.path.join(video_path, os.pardir))
+        self.frames_path = video_dir + "/frames/"
+        counter = 0
+        if not os.path.isdir(self.frames_path):
+            # If the frames do not exist yet
+            os.mkdir(self.frames_path)
+            status = True
+            while status:
+                # Read image and
+                status, frame = self.video.read()
+                if status:
+                    cv2.imwrite(self.frames_path + "frame_" + str(counter) + ".jpg", frame)
+                    counter = counter + 1
+        else:
+            # Get frame number by scrolling files
+            for file in os.listdir(self.frames_path):
+                if file.endswith(".jpg"):
+                    counter = counter + 1
 
-            # Then, close the video
-            self.video.release()
-            print("Video Frames extracted successfully")
+        # Update frame number
+        self.frame_number = counter
+        # Then, close the video
+        self.video.release()
+        print("Video Frames extracted successfully")
 
-        # If frames are not saved, video is not closed
         return 0
 
 
@@ -98,14 +97,8 @@ class VideoReader:
         if frame_index < 0 or frame_index >= self.frame_number:
             raise ValueError("Frame index out of bounds")
 
-        # Now load the image
-        if self.on_disk:
-            # Load the image from files
-            image = cv2.imread(self.frames_path + "frame_" + str(frame_index) + ".jpg")
-        else:
-            # In case the video is open, with the on the fly option
-            check = self.video.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
-            status, image = self.video.read()
+        # Load the image from files
+        image = cv2.imread(self.frames_path + "frame_" + str(frame_index) + ".jpg")
 
         # return the image
         return image

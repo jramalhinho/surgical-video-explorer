@@ -6,13 +6,11 @@ Main widget class, where all everything is displayed
 
 
 import threading
-import shutil
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPixmap, QImage
 from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout, QFileDialog, QMessageBox, QComboBox, QHBoxLayout, \
     QLineEdit
 import data_io.video_reader as vidr
-
 
 
 class MainWidget(QWidget):
@@ -50,7 +48,7 @@ class MainWidget(QWidget):
         self.frame_edit.setReadOnly(True)
 
         # A label with the total number of frames
-        self.total_label = QLabel("out of 0")
+        self.total_label = QLabel("Frame 0/0")
         self.total_label.setFont(QFont("Arial", 11))
 
         # a video frame checker, an interactive text
@@ -135,6 +133,7 @@ class MainWidget(QWidget):
         # Show the widget to start
         self.show()
 
+
     def on_load_button_click(self):
         """
         Slot that prompts user to provide directory of data
@@ -152,14 +151,14 @@ class MainWidget(QWidget):
         # Change text of button
         self.load_button.setText("Loading")
         self.video_reader = vidr.VideoReader()
-        self.video_reader.load_video(video_path=self.video_path,
-                                     on_disk=True)
+        self.video_reader.load_video(video_path=self.video_path)
         self.load_button.setText("Load Video")
 
         # Update patient code in the GUI
         patient_name = self.video_path.split("/")[-1]
         patient_name = patient_name.split(".")[0]
         self.patient_label.setText("Patient ID: " + patient_name)
+        self.total_label.setText("Frame 1/" + str(self.video_reader.frame_number))
 
         # Update video viewer
         displayed_frame = self.video_reader.load_image(0)
@@ -179,6 +178,7 @@ class MainWidget(QWidget):
 
         return 0
 
+
     def on_next_button_click(self):
         """
         Method to advance one image in the video display
@@ -197,6 +197,7 @@ class MainWidget(QWidget):
 
         return 0
 
+
     def on_prev_button_click(self):
         """
         Method to retrocede one image in the video display
@@ -213,6 +214,7 @@ class MainWidget(QWidget):
         self.update_image(self.current_frame)
 
         return 0
+
 
     def on_play_button_click(self):
         """
@@ -261,6 +263,17 @@ class MainWidget(QWidget):
         self.video_display.setPixmap(QPixmap(displayed_qimage))
 
         return 0
+
+    def closeEvent(self, event):
+        """
+        Method for close confirmation
+        """
+        confirmation = QMessageBox.question(self, "Confirmation", "Are you done?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if confirmation == QMessageBox.StandardButton.Yes:
+            event.accept()  # Close the app
+        else:
+            event.ignore()  # Don't close the app
 
 
 def convert_rgb_to_qimage(rgb):
