@@ -36,28 +36,13 @@ class MainWidget(QWidget):
         self.rate_label = QLabel("Frame Rate")
         self.rate_label.setFont(QFont("Arial", 11))
 
-
         # a button for loading video
         self.load_button = QPushButton("Load Video")
         self.load_button.clicked.connect(self.on_load_button_click)
 
-        # a video frame checker, an interactive text
-        self.frame_edit = QLineEdit()
-        self.frame_edit.setFont(QFont("Arial", 11))
-        self.frame_edit.setText("0")
-        self.frame_edit.setMaximumWidth(30)
-        self.frame_edit.setReadOnly(True)
-
         # A label with the total number of frames
-        self.total_label = QLabel("Frame 0/0")
-        self.total_label.setFont(QFont("Arial", 11))
-
-        # a video frame checker, an interactive text
-        self.rate_edit = QLineEdit()
-        self.rate_edit.setFont(QFont("Arial", 11))
-        self.rate_edit.setText("1")
-        self.rate_edit.setMaximumWidth(30)
-        self.rate_edit.setReadOnly(True)
+        self.current_frame_label = QLabel("Frame 0/0")
+        self.current_frame_label.setFont(QFont("Arial", 11))
 
         # a display for video
         self.video_display = QLabel()
@@ -71,6 +56,9 @@ class MainWidget(QWidget):
         self.play_button = QPushButton("Play")
         self.play_button.clicked.connect(self.on_play_button_click)
         self.play_button.setDisabled(True)
+        self.reset_button = QPushButton("Reset")
+        self.reset_button.clicked.connect(self.on_reset_button_click)
+        self.reset_button.setDisabled(True)
         # Make a button with drop menu
         self.sampling_button = QComboBox()
 
@@ -94,14 +82,9 @@ class MainWidget(QWidget):
 
         # Add load and frame checker in the next row
         load_row = QHBoxLayout()
-        frame_box = QHBoxLayout()
-        frame_box.addWidget(self.frame_edit)
-        frame_box.addWidget(self.total_label)
         load_row.addWidget(self.load_button)
         load_row.addWidget(self.frame_label)
-        load_row.addLayout(frame_box)
-        load_row.addWidget(self.rate_label)
-        load_row.addWidget(self.rate_edit)
+        load_row.addWidget(self.current_frame_label)
         left_column.addLayout(load_row)
 
         # Add the video display
@@ -112,12 +95,8 @@ class MainWidget(QWidget):
         play_buttons_layout.addWidget(self.prev_button)
         play_buttons_layout.addWidget(self.play_button)
         play_buttons_layout.addWidget(self.next_button)
+        play_buttons_layout.addWidget(self.reset_button)
         left_column.addLayout(play_buttons_layout)
-
-
-
-
-
 
         # Directory of data to display
         self.video_path = None
@@ -127,8 +106,8 @@ class MainWidget(QWidget):
         self.current_frame = None
         self.sampling_rate = 1
 
-        # Threads ( a check to keep them)
-        self.run_threads = False
+        # Threads (a check to keep them)
+        self.run_threads = True
 
         # Thread for video playback
         self.playing = False
@@ -137,6 +116,10 @@ class MainWidget(QWidget):
         # Thread for checking prev and next button
         self.thread_prev_next = threading.Thread(target=self.check_next_and_prev_buttons)
         self.thread_prev_next.start()
+
+        # Thread to update current frame
+        self.thread_current_frame = threading.Thread(target=self.check_current_frame)
+        self.thread_current_frame.start()
 
         # Show the widget to start
         self.show()
@@ -166,7 +149,7 @@ class MainWidget(QWidget):
         patient_name = self.video_path.split("/")[-1]
         patient_name = patient_name.split(".")[0]
         self.patient_label.setText("Patient ID: " + patient_name)
-        self.total_label.setText("Frame 1/" + str(self.video_reader.frame_number))
+        self.current_frame_label.setText("Frame 1/" + str(self.video_reader.frame_number))
 
         # Update video viewer
         displayed_frame = self.video_reader.load_image(0)
@@ -179,10 +162,7 @@ class MainWidget(QWidget):
         # Make play and next buttons togglable with qt
         self.next_button.setDisabled(False)
         self.play_button.setDisabled(False)
-
-        # Make edits possible
-        self.frame_edit.setReadOnly(False)
-        self.rate_edit.setReadOnly(False)
+        self.reset_button.setDisabled(False)
 
         return 0
 
@@ -222,6 +202,25 @@ class MainWidget(QWidget):
         self.update_image(self.current_frame)
 
         return 0
+
+
+    def on_reset_button_click(self):
+        """
+        Method to retrocede one image in the video display
+        """
+        # Check if video thread is active
+        if self.playing:
+            # stop video playing
+            self.on_play_button_click()
+
+        # Update current frame, with current sampling rate
+        self.current_frame = 0
+
+        # Update with the function
+        self.update_image(self.current_frame)
+
+        return 0
+
 
 
     def on_play_button_click(self):
@@ -292,6 +291,17 @@ class MainWidget(QWidget):
             time.sleep(0.01)
 
 
+    def check_current_frame(self):
+        """
+        Thread to update current frame
+        """
+        while True and self.run_threads:
+            if self.current_frame is not None:
+                # Update the text label with frame number
+                self.current_frame_label.setText(str(self.current_frame + 1)
+                                                 + "/" + str(self.video_reader.frame_number))
+            time.sleep(0.01)
+
 
     def closeEvent(self, event):
         """
@@ -314,6 +324,7 @@ class MainWidget(QWidget):
         Method to end threads
         """
         self.thread_prev_next.join()
+        self.thread_current_frame.join()
 
 
 def convert_rgb_to_qimage(rgb):
