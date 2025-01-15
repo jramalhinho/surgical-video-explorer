@@ -5,6 +5,7 @@ Main widget class, where all everything is displayed
 """
 
 
+import time
 import threading
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPixmap, QImage
@@ -126,9 +127,16 @@ class MainWidget(QWidget):
         self.current_frame = None
         self.sampling_rate = 1
 
-        # Threads
+        # Threads ( a check to keep them)
+        self.run_threads = False
+
+        # Thread for video playback
         self.playing = False
         self.play_thread = threading.Thread(target=self.play_video)
+
+        # Thread for checking prev and next button
+        self.thread_prev_next = threading.Thread(target=self.check_next_and_prev_buttons)
+        self.thread_prev_next.start()
 
         # Show the widget to start
         self.show()
@@ -264,6 +272,27 @@ class MainWidget(QWidget):
 
         return 0
 
+
+    def check_next_and_prev_buttons(self):
+        """
+        Thread that checks if we are at end of video
+        """
+        while True and self.run_threads:
+            if (self.video_reader is not None and
+                    self.current_frame is not None):
+                if self.current_frame == 0:
+                    self.prev_button.setDisabled(True)
+                else:
+                    self.prev_button.setDisabled(False)
+
+                if self.current_frame == self.video_reader.frame_number - 1:
+                    self.next_button.setDisabled(True)
+                else:
+                    self.next_button.setDisabled(False)
+            time.sleep(0.01)
+
+
+
     def closeEvent(self, event):
         """
         Method for close confirmation
@@ -271,9 +300,20 @@ class MainWidget(QWidget):
         confirmation = QMessageBox.question(self, "Confirmation", "Are you done?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         if confirmation == QMessageBox.StandardButton.Yes:
+            # Finish threads
+            self.run_threads = False
+            if self.playing:
+                print("Video is playing")
+                self.on_play_button_click()
             event.accept()  # Close the app
         else:
             event.ignore()  # Don't close the app
+
+    def finish_continuous_threads(self):
+        """
+        Method to end threads
+        """
+        self.thread_prev_next.join()
 
 
 def convert_rgb_to_qimage(rgb):
