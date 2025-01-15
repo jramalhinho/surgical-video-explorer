@@ -5,6 +5,7 @@ Main widget class, where all everything is displayed
 """
 
 
+import numpy as np
 import time
 import threading
 from PyQt6.QtCore import Qt
@@ -32,17 +33,26 @@ class MainWidget(QWidget):
         self.frame_label = QLabel("Current Frame")
         self.frame_label.setFont(QFont("Arial", 12))
 
-        # A label for the current frame rate
-        self.rate_label = QLabel("Frame Rate")
-        self.rate_label.setFont(QFont("Arial", 11))
+        # A label with the total number of frames
+        self.current_frame_label = QLabel("Frame 0/0")
+        self.current_frame_label.setFont(QFont("Arial", 11))
 
         # a button for loading video
         self.load_button = QPushButton("Load Video")
         self.load_button.clicked.connect(self.on_load_button_click)
 
-        # A label with the total number of frames
-        self.current_frame_label = QLabel("Frame 0/0")
-        self.current_frame_label.setFont(QFont("Arial", 11))
+        # A label for the current frame rate
+        self.navigate_label = QLabel("Go to Frame ")
+        self.navigate_label.setFont(QFont("Arial", 11))
+
+        # a video frame checker, an interactive text
+        self.navigate_edit = QLineEdit()
+        self.navigate_edit.setFont(QFont("Arial", 11))
+        self.navigate_edit.setText("0")
+        self.navigate_edit.setMaximumWidth(50)
+        self.navigate_edit.setReadOnly(True)
+        # Make label edit change something
+        self.navigate_edit.returnPressed.connect(self.on_navigation_input)
 
         # a display for video
         self.video_display = QLabel()
@@ -77,7 +87,6 @@ class MainWidget(QWidget):
         # Add objects to the left column, first a row
         patient_row = QHBoxLayout()
         patient_row.addWidget(self.patient_label)
-
         left_column.addLayout(patient_row)
 
         # Add load and frame checker in the next row
@@ -85,10 +94,16 @@ class MainWidget(QWidget):
         load_row.addWidget(self.load_button)
         load_row.addWidget(self.frame_label)
         load_row.addWidget(self.current_frame_label)
+        load_row.addWidget(self.navigate_label)
+        load_row.addWidget(self.navigate_edit)
         left_column.addLayout(load_row)
 
         # Add the video display
         left_column.addWidget(self.video_display)
+        # Put a black background to start
+        self.background_image = np.zeros((480, 854, 3), dtype=np.uint8)
+        displayed_qimage = convert_rgb_to_qimage(self.background_image)
+        self.video_display.setPixmap(QPixmap(displayed_qimage))
 
         # Add the play buttons
         play_buttons_layout = QHBoxLayout()
@@ -163,6 +178,9 @@ class MainWidget(QWidget):
         self.next_button.setDisabled(False)
         self.play_button.setDisabled(False)
         self.reset_button.setDisabled(False)
+
+        # Make squares editable
+        self.navigate_edit.setReadOnly(False)
 
         return 0
 
@@ -239,6 +257,26 @@ class MainWidget(QWidget):
             # Restart the thread
             self.play_thread = threading.Thread(target=self.play_video)
 
+
+    def on_navigation_input(self):
+        """
+        Function to change frame to number in navigation edit
+        """
+        # Current edit
+        input = self.navigate_edit.text()
+        if input.isdigit():
+            intended_frame = int(input)
+            if 0 < intended_frame < self.video_reader.frame_number:
+                self.current_frame = intended_frame - 1
+                # Stop video
+                if self.playing:
+                    self.on_play_button_click()
+                # Update image
+                self.update_image(self.current_frame)
+            else:
+                QMessageBox.information(self, "Error", "Invalid input number!")
+
+        return 0
 
     def play_video(self):
         """
