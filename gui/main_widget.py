@@ -11,7 +11,7 @@ import threading
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QPixmap, QImage
 from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout, QFileDialog, QMessageBox, QComboBox, QHBoxLayout, \
-    QLineEdit
+    QLineEdit, QSlider
 import data_io.video_reader as vidr
 
 
@@ -23,7 +23,9 @@ class MainWidget(QWidget):
         super().__init__()
         # Define elements, first title
         self.setWindowTitle("Cholec80 Video Explorer")
-        # self.setFixedSize(1920, 1080)
+
+        # Create a background image to be placeholder (sizes are currently hardcoded, but can be changed)
+        self.background_image = np.zeros((480, 854, 3), dtype=np.uint8)
 
         # a label of "patient"
         self.patient_label = QLabel("Patient ID:")
@@ -54,8 +56,24 @@ class MainWidget(QWidget):
         # Make label edit change something
         self.navigate_edit.returnPressed.connect(self.on_navigation_input)
 
-        # a display for video
+        # A label for the current frame rate
+        self.rate_label = QLabel("Playback speed")
+        self.rate_label.setFont(QFont("Arial", 11))
+        # Control this with a slider
+        self.rate_slider = QSlider(Qt.Orientation.Horizontal)
+        self.rate_slider.setMaximumWidth(150)
+        self.rate_slider.setMinimum(1)
+        self.rate_slider.setMaximum(5)
+        self.rate_slider.setValue(1)
+        self.rate_slider.setTickInterval(1)
+        self.rate_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        self.rate_slider.valueChanged.connect(self.on_slider_change)
+
+        # a display for video, initialised with background
         self.video_display = QLabel()
+        displayed_qimage = convert_rgb_to_qimage(self.background_image)
+        self.video_display.setPixmap(QPixmap(displayed_qimage))
+
         # Buttons for playing and stepping
         self.next_button = QPushButton(">")
         self.next_button.clicked.connect(self.on_next_button_click)
@@ -69,8 +87,29 @@ class MainWidget(QWidget):
         self.reset_button = QPushButton("Reset")
         self.reset_button.clicked.connect(self.on_reset_button_click)
         self.reset_button.setDisabled(True)
-        # Make a button with drop menu
-        self.sampling_button = QComboBox()
+
+        # Second column, with resulting overlay
+        self.middle_column_label = QLabel("Processed Video")
+        self.middle_column_label.setFont(QFont("Arial", 11))
+
+        # Label with analysis technique or method
+        self.analysis_label = QLabel("Analysis: ")
+        self.analysis_label.setFont(QFont("Arial", 11))
+
+        # Label that will hold result display
+        self.result_display = QLabel()
+        # Initialise the result with black background as well
+        displayed_qimage = convert_rgb_to_qimage(self.background_image)
+        self.result_display.setPixmap(QPixmap(displayed_qimage))
+
+        # A button to save results
+        self.save_button = QPushButton("Save")
+        self.save_button.setDisabled(True)
+
+        # A button to export a report
+        self.export_button = QPushButton("Export")
+        self.export_button.setDisabled(True)
+
 
         # Position objects
         main_layout = QHBoxLayout()
@@ -96,14 +135,12 @@ class MainWidget(QWidget):
         load_row.addWidget(self.current_frame_label)
         load_row.addWidget(self.navigate_label)
         load_row.addWidget(self.navigate_edit)
+        load_row.addWidget(self.rate_label)
+        load_row.addWidget(self.rate_slider)
         left_column.addLayout(load_row)
 
         # Add the video display
         left_column.addWidget(self.video_display)
-        # Put a black background to start
-        self.background_image = np.zeros((480, 854, 3), dtype=np.uint8)
-        displayed_qimage = convert_rgb_to_qimage(self.background_image)
-        self.video_display.setPixmap(QPixmap(displayed_qimage))
 
         # Add the play buttons
         play_buttons_layout = QHBoxLayout()
@@ -113,6 +150,16 @@ class MainWidget(QWidget):
         play_buttons_layout.addWidget(self.reset_button)
         left_column.addLayout(play_buttons_layout)
 
+        # Position the middle column
+        middle_column.addWidget(self.middle_column_label)
+        middle_column.addWidget(self.analysis_label)
+        middle_column.addWidget(self.result_display)
+        save_box = QHBoxLayout()
+        save_box.addWidget(self.save_button)
+        save_box.addWidget(self.export_button)
+        middle_column.addLayout(save_box)
+
+
         # Directory of data to display
         self.video_path = None
         self.video_reader = None
@@ -120,6 +167,7 @@ class MainWidget(QWidget):
         # Parameters on video display
         self.current_frame = None
         self.sampling_rate = 1
+        self.display_rate = 0.001
 
         # Threads (a check to keep them)
         self.run_threads = True
@@ -178,6 +226,8 @@ class MainWidget(QWidget):
         self.next_button.setDisabled(False)
         self.play_button.setDisabled(False)
         self.reset_button.setDisabled(False)
+        self.save_button.setDisabled(False)
+        self.export_button.setDisabled(False)
 
         # Make squares editable
         self.navigate_edit.setReadOnly(False)
@@ -240,7 +290,6 @@ class MainWidget(QWidget):
         return 0
 
 
-
     def on_play_button_click(self):
         """
         Button to play and stop video
@@ -278,6 +327,16 @@ class MainWidget(QWidget):
 
         return 0
 
+
+    def on_slider_change(self):
+        """
+        Method to change playback frame-rate
+        """
+        # Update display rate
+        self.display_rate = 1 / (4 ** int(self.rate_slider.value()))
+        return 0
+
+
     def play_video(self):
         """
         Thread to play video
@@ -288,7 +347,7 @@ class MainWidget(QWidget):
                                      self.video_reader.frame_number - 1)
             # Update
             self.update_image(self.current_frame)
-            # time.sleep(0.01)
+            time.sleep(self.display_rate)
             if not self.playing:
                 break
 
