@@ -20,7 +20,7 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts':[
-            'surgical_video_explorer=surgical_video_explorer.__main__:main',
+            'surgical_video_explorer=surgical_video_explorer:main',
         ]
     }
 )
