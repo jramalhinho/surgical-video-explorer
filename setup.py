@@ -20,7 +20,7 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts':[
-            'surgical_video_explorer=surgical_video_explorer:main',
+            'surgical_video_explorer=app.navigator_app:main',
         ]
     }
 )
