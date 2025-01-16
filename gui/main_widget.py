@@ -7,10 +7,10 @@ import cv2
 import numpy as np
 import time
 import threading
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QPixmap, QImage
-from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout, QFileDialog, QMessageBox, QComboBox, QHBoxLayout, \
-    QLineEdit, QSlider
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QPixmap, QImage, QPainter, QPen, QColor
+from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout, QFileDialog, QMessageBox, QHBoxLayout, \
+    QLineEdit, QSlider, QComboBox
 import data_io.video_reader as vidr
 import processing.image_filters as imf
 
@@ -98,6 +98,13 @@ class MainWidget(QWidget):
         self.analysis_label = QLabel("Analysis: ")
         self.analysis_label.setFont(QFont("Arial", 11))
 
+        # A drop down method to show possible methods
+        self.analysis_combo = QComboBox()
+        self.analysis_combo.addItems(["None", "Grayscale", "Optical Flow"])
+        self.analysis_combo.currentIndexChanged.connect(self.on_drop_down_change)
+        # Methods to apply to images for analysis, as a string
+        self.analysis_method = None
+
         # Label that will hold result display
         self.result_display = QLabel()
         # Initialise the result with black background as well
@@ -153,7 +160,10 @@ class MainWidget(QWidget):
 
         # Position the middle column
         middle_column.addWidget(self.middle_column_label)
-        middle_column.addWidget(self.analysis_label)
+        method_box = QHBoxLayout()
+        method_box.addWidget(self.analysis_label)
+        method_box.addWidget(self.analysis_combo)
+        middle_column.addLayout(method_box)
         middle_column.addWidget(self.result_display)
         save_box = QHBoxLayout()
         save_box.addWidget(self.save_button)
@@ -183,9 +193,6 @@ class MainWidget(QWidget):
         # Thread to update current frame
         self.thread_current_frame = threading.Thread(target=self.check_current_frame)
         self.thread_current_frame.start()
-
-        # Methods to apply to images for analysis, as a string
-        self.result_method = None
 
         # Show the widget to start
         self.show()
@@ -217,13 +224,11 @@ class MainWidget(QWidget):
         self.patient_label.setText("Patient ID: " + patient_name)
         self.current_frame_label.setText("Frame 1/" + str(self.video_reader.frame_number))
 
-        # Update video viewer
-        displayed_frame = self.video_reader.load_image(0)
-        displayed_qimage = convert_rgb_to_qimage(displayed_frame)
-        self.video_display.setPixmap(QPixmap(displayed_qimage))
-
         # Update video frame being shown
         self.current_frame = 0
+
+        # Update video viewer
+        self.update_image(self.current_frame)
 
         # Make play and next buttons togglable with qt
         self.next_button.setDisabled(False)
@@ -379,18 +384,45 @@ class MainWidget(QWidget):
         Method that applies results of a pipeline on the result display
         :return:
         """
-        if self.result_method is None:
-            # At the beginning, show no method
-            displayed_frame = self.video_reader.load_image(self.current_frame)
+        # First, extract current image
+        displayed_frame = self.video_reader.load_image(self.current_frame)
+        if self.analysis_method is None:
+            # No method, just convert to QImage
+            displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+        elif self.analysis_method == "grayscale":
             # Convert to gray scale
             displayed_frame = imf.convert_to_grayscale(displayed_frame)
             displayed_frame = np.expand_dims(displayed_frame, axis=2)
             displayed_frame = np.tile(displayed_frame, (1, 1, 3))
             # Convert to QImage
             displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+        elif self.analysis_method == "opticalflow":
             # Update GUI
-            self.result_display.setPixmap(QPixmap(displayed_qimage))
+            displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+            # Not implemented yet, display text
+            painter = QPainter(displayed_qimage)
+            painter.setPen(QPen(QColor("green")))
+            painter.setFont(QFont("Arial", 15))
+            painter.drawText(50, 50, "Not implemented yet. Coming soon!")
+            painter.end()
 
+        self.result_display.setPixmap(QPixmap(displayed_qimage))
+
+        return 0
+
+
+    def on_drop_down_change(self):
+        """
+        Method to change current method of analysis
+        :return:
+        """
+        # Check the text in the dropdown menu and change current method
+        if self.analysis_combo.currentText() == "None":
+            self.analysis_method = None
+        elif self.analysis_combo.currentText() == "Grayscale":
+            self.analysis_method = "grayscale"
+        elif self.analysis_combo.currentText() == "Optical Flow":
+            self.analysis_method = "opticalflow"
         return 0
 
 
