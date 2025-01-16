@@ -535,6 +535,7 @@ class MainWidget(QWidget):
         painter = QPainter(concatenated_image)
         painter.drawImage(0, 0, video_image)
         painter.drawImage(video_image.width(), 0, result_image)
+        painter.end()
 
         default_name = (str.replace(self.analysis_combo.currentText(), " ", "_")
                                 + "_" + str(self.current_frame))
