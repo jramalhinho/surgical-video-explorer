@@ -3,6 +3,8 @@
 """
 Main widget class, where all everything is displayed
 """
+
+
 import os
 import cv2
 import numpy as np
@@ -123,7 +125,7 @@ class MainWidget(QWidget):
         self.save_button.clicked.connect(self.on_save_button_click)
 
         # A button to export a report
-        self.export_button = QPushButton("Export")
+        self.export_button = QPushButton("Export - Coming Soon")
         self.export_button.setDisabled(True)
 
         # Position objects
@@ -201,6 +203,10 @@ class MainWidget(QWidget):
         self.thread_current_frame = threading.Thread(target=self.check_current_frame)
         self.thread_current_frame.start()
 
+        # Thread for saving results
+        self.saving = False
+        self.thread_save_results = threading.Thread(target=self.check_saving)
+
         # Show the widget to start
         self.show()
 
@@ -242,7 +248,6 @@ class MainWidget(QWidget):
         self.play_button.setDisabled(False)
         self.reset_button.setDisabled(False)
         self.save_button.setDisabled(False)
-        self.export_button.setDisabled(False)
 
         # Make squares editable
         self.navigate_edit.setReadOnly(False)
@@ -388,33 +393,13 @@ class MainWidget(QWidget):
         if self.playing:
             self.on_play_button_click()
 
-        # Check if save directory exists
-        aux = self.video_path[::-1].find("/")
-        data_directory = self.video_path[:-aux]
-        if not os.path.isdir(data_directory + "results/"):
-            os.mkdir(data_directory + "results/")
+        # Now, updating saving to true, triggering saving
+        self.thread_save_results.start()
+        # Restart thread
+        self.thread_save_results = threading.Thread(target=self.check_saving)
 
-        # Get current frame on result display
-        video_image = self.video_display.grab().toImage()
-        result_image = self.result_display.grab().toImage()
-        new_width = video_image.width() * 2
-        new_height = video_image.height()
-        concatenated_image = QImage(new_width, new_height, QImage.Format.Format_RGB32)
-        concatenated_image.fill(Qt.GlobalColor.transparent) # Fill with transparent color
+        return 0
 
-        # Use QPainter to paint them onto larger result
-        painter = QPainter(concatenated_image)
-        painter.drawImage(0, 0, video_image)
-        painter.drawImage(video_image.width(), 0, result_image)
-
-        default_name = (str.replace(self.analysis_combo.currentText(), " ", "_")
-                        + "_" + str(self.current_frame))
-        concatenated_image.save(data_directory + "results/" + default_name + ".jpg")
-
-
-
-        # First, check if there is a directory with results
-        print("x")
 
     # Threads and other methods
     def play_video(self):
@@ -526,6 +511,35 @@ class MainWidget(QWidget):
                 self.current_frame_label.setText(str(self.current_frame + 1)
                                                  + "/" + str(self.video_reader.frame_number))
             time.sleep(0.01)
+
+
+    def check_saving(self):
+        """
+        Thread to save images separately from main thread
+        """
+        # Check if save directory exists
+        aux = self.video_path[::-1].find("/")
+        data_directory = self.video_path[:-aux]
+        if not os.path.isdir(data_directory + "results/"):
+            os.mkdir(data_directory + "results/")
+
+        # Get current frame on result display
+        video_image = self.video_display.grab().toImage()
+        result_image = self.result_display.grab().toImage()
+        new_width = video_image.width() * 2
+        new_height = video_image.height()
+        concatenated_image = QImage(new_width, new_height, QImage.Format.Format_RGB32)
+        concatenated_image.fill(Qt.GlobalColor.transparent)  # Fill with transparent color
+
+        # Use QPainter to paint them onto larger result
+        painter = QPainter(concatenated_image)
+        painter.drawImage(0, 0, video_image)
+        painter.drawImage(video_image.width(), 0, result_image)
+
+        default_name = (str.replace(self.analysis_combo.currentText(), " ", "_")
+                                + "_" + str(self.current_frame))
+        concatenated_image.save(data_directory + "results/" + default_name + ".jpg")
+        time.sleep(0.1)
 
 
     def closeEvent(self, event):
