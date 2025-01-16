@@ -17,6 +17,7 @@ setup(
             'PyQt6==6.8.0',
             'numpy==2.2.1'
     ],
+    packages=find_packages(),
     entry_points={
         'console_scripts':[
             'surgical_video_explorer=surgical_video_explorer:main',
