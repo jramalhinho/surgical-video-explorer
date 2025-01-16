@@ -3,16 +3,16 @@
 """
 Main widget class, where all everything is displayed
 """
-
-
+import cv2
 import numpy as np
 import time
 import threading
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QPixmap, QImage
 from PyQt6.QtWidgets import QWidget, QPushButton, QLabel, QVBoxLayout, QFileDialog, QMessageBox, QComboBox, QHBoxLayout, \
     QLineEdit, QSlider
 import data_io.video_reader as vidr
+import processing.image_filters as imf
 
 
 class MainWidget(QWidget):
@@ -73,6 +73,8 @@ class MainWidget(QWidget):
         self.video_display = QLabel()
         displayed_qimage = convert_rgb_to_qimage(self.background_image)
         self.video_display.setPixmap(QPixmap(displayed_qimage))
+        # Make a signal whenever the image is updated
+
 
         # Buttons for playing and stepping
         self.next_button = QPushButton(">")
@@ -109,7 +111,6 @@ class MainWidget(QWidget):
         # A button to export a report
         self.export_button = QPushButton("Export")
         self.export_button.setDisabled(True)
-
 
         # Position objects
         main_layout = QHBoxLayout()
@@ -159,7 +160,6 @@ class MainWidget(QWidget):
         save_box.addWidget(self.export_button)
         middle_column.addLayout(save_box)
 
-
         # Directory of data to display
         self.video_path = None
         self.video_reader = None
@@ -167,7 +167,7 @@ class MainWidget(QWidget):
         # Parameters on video display
         self.current_frame = None
         self.sampling_rate = 1
-        self.display_rate = 0.001
+        self.display_rate = 0.25
 
         # Threads (a check to keep them)
         self.run_threads = True
@@ -183,6 +183,9 @@ class MainWidget(QWidget):
         # Thread to update current frame
         self.thread_current_frame = threading.Thread(target=self.check_current_frame)
         self.thread_current_frame.start()
+
+        # Methods to apply to images for analysis, as a string
+        self.result_method = None
 
         # Show the widget to start
         self.show()
@@ -365,6 +368,28 @@ class MainWidget(QWidget):
         # Convert to QImage
         displayed_qimage = convert_rgb_to_qimage(displayed_frame)
         self.video_display.setPixmap(QPixmap(displayed_qimage))
+        # Update result window as well
+        self.update_results_display()
+
+        return 0
+
+
+    def update_results_display(self):
+        """
+        Method that applies results of a pipeline on the result display
+        :return:
+        """
+        if self.result_method is None:
+            # At the beginning, show no method
+            displayed_frame = self.video_reader.load_image(self.current_frame)
+            # Convert to gray scale
+            displayed_frame = imf.convert_to_grayscale(displayed_frame)
+            displayed_frame = np.expand_dims(displayed_frame, axis=2)
+            displayed_frame = np.tile(displayed_frame, (1, 1, 3))
+            # Convert to QImage
+            displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+            # Update GUI
+            self.result_display.setPixmap(QPixmap(displayed_qimage))
 
         return 0
 
