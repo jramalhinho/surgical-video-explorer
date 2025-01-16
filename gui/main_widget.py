@@ -95,12 +95,17 @@ class MainWidget(QWidget):
         self.middle_column_label.setFont(QFont("Arial", 11))
 
         # Label with analysis technique or method
-        self.analysis_label = QLabel("Analysis: ")
+        self.analysis_label = QLabel("Analysis: None")
         self.analysis_label.setFont(QFont("Arial", 11))
 
         # A drop down method to show possible methods
         self.analysis_combo = QComboBox()
-        self.analysis_combo.addItems(["None", "Grayscale", "Optical Flow"])
+        self.analysis_combo.addItems(["None",
+                                      "Grayscale",
+                                      "Movement Maps",
+                                      "Bleeding Analysis",
+                                      "Anatomical Maps",
+                                      "Tool Identification"])
         self.analysis_combo.currentIndexChanged.connect(self.on_drop_down_change)
         # Methods to apply to images for analysis, as a string
         self.analysis_method = None
@@ -405,6 +410,15 @@ class MainWidget(QWidget):
             painter.setFont(QFont("Arial", 15))
             painter.drawText(50, 50, "Not implemented yet. Coming soon!")
             painter.end()
+        elif self.analysis_method is "not implemented":
+            # Update GUI
+            displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+            # Not implemented yet, display text
+            painter = QPainter(displayed_qimage)
+            painter.setPen(QPen(QColor("green")))
+            painter.setFont(QFont("Arial", 15))
+            painter.drawText(50, 50, "Not implemented yet. Coming soon!")
+            painter.end()
 
         self.result_display.setPixmap(QPixmap(displayed_qimage))
 
@@ -419,10 +433,22 @@ class MainWidget(QWidget):
         # Check the text in the dropdown menu and change current method
         if self.analysis_combo.currentText() == "None":
             self.analysis_method = None
+            self.analysis_label.setText("Analysis: None")
         elif self.analysis_combo.currentText() == "Grayscale":
             self.analysis_method = "grayscale"
-        elif self.analysis_combo.currentText() == "Optical Flow":
+            self.analysis_label.setText("Analysis: Gray scale")
+        elif self.analysis_combo.currentText() == "Movement Maps":
             self.analysis_method = "opticalflow"
+            self.analysis_label.setText("Analysis: Movement Maps")
+        elif self.analysis_combo.currentText() == "Bleeding Analysis":
+            self.analysis_method = "not implemented"
+            self.analysis_label.setText("Analysis: Bleeding Analysis")
+        elif self.analysis_combo.currentText() == "Anatomical Maps":
+            self.analysis_method = "not implemented"
+            self.analysis_label.setText("Analysis: Anatomical Maps")
+        elif self.analysis_combo.currentText() == "Tool Identification":
+            self.analysis_method = "not implemented"
+            self.analysis_label.setText("Analysis: Tool Identification")
         return 0
 
 
