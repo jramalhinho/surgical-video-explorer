@@ -397,20 +397,24 @@ class MainWidget(QWidget):
         elif self.analysis_method == "grayscale":
             # Convert to gray scale
             displayed_frame = imf.convert_to_grayscale(displayed_frame)
-            displayed_frame = np.expand_dims(displayed_frame, axis=2)
-            displayed_frame = np.tile(displayed_frame, (1, 1, 3))
             # Convert to QImage
-            displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+            displayed_qimage = convert_gray_to_qimage(displayed_frame)
         elif self.analysis_method == "opticalflow":
-            # Update GUI
+            # Load next image for optical flow
+            if self.current_frame == 0:
+                # if we are at image 0, get the one after
+                next_frame = self.video_reader.load_image(1)
+                prev_frame = displayed_frame
+            else:
+                # Normally, get the one before
+                prev_frame = self.video_reader.load_image(self.current_frame - 1)
+                next_frame = displayed_frame
+
+            # Calculate flow map
+            displayed_frame = imf.optical_flow(prev_frame, next_frame)
             displayed_qimage = convert_rgb_to_qimage(displayed_frame)
-            # Not implemented yet, display text
-            painter = QPainter(displayed_qimage)
-            painter.setPen(QPen(QColor("green")))
-            painter.setFont(QFont("Arial", 15))
-            painter.drawText(50, 50, "Not implemented yet. Coming soon!")
-            painter.end()
-        elif self.analysis_method is "not implemented":
+
+        elif self.analysis_method == "not implemented":
             # Update GUI
             displayed_qimage = convert_rgb_to_qimage(displayed_frame)
             # Not implemented yet, display text
@@ -518,5 +522,18 @@ def convert_rgb_to_qimage(rgb):
     height, width, channels = rgb.shape
     # Define the image
     new_image = QImage(rgb, width, height, width * 3, QImage.Format.Format_BGR888)
+    # return
+    return new_image
+
+def convert_gray_to_qimage(gray):
+    """
+    Function to convert gray scale input to QImage
+    :param gray:
+    :return:
+    """
+    # Get image dimensions
+    height, width = gray.shape
+    # Define the image
+    new_image = QImage(gray, width, height, width, QImage.Format.Format_Grayscale8)
     # return
     return new_image
