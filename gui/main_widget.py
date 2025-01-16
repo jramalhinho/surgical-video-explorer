@@ -3,6 +3,7 @@
 """
 Main widget class, where all everything is displayed
 """
+import os
 import cv2
 import numpy as np
 import time
@@ -119,6 +120,7 @@ class MainWidget(QWidget):
         # A button to save results
         self.save_button = QPushButton("Save")
         self.save_button.setDisabled(True)
+        self.save_button.clicked.connect(self.on_save_button_click)
 
         # A button to export a report
         self.export_button = QPushButton("Export")
@@ -247,7 +249,7 @@ class MainWidget(QWidget):
 
         return 0
 
-
+    # Button actions
     def on_next_button_click(self):
         """
         Method to advance one image in the video display
@@ -350,6 +352,71 @@ class MainWidget(QWidget):
         return 0
 
 
+    def on_drop_down_change(self):
+        """
+        Method to change current method of analysis
+        :return:
+        """
+        # Check the text in the dropdown menu and change current method
+        if self.analysis_combo.currentText() == "None":
+            self.analysis_method = None
+            self.analysis_label.setText("Analysis: None")
+        elif self.analysis_combo.currentText() == "Grayscale":
+            self.analysis_method = "grayscale"
+            self.analysis_label.setText("Analysis: Gray scale")
+        elif self.analysis_combo.currentText() == "Movement Maps":
+            self.analysis_method = "opticalflow"
+            self.analysis_label.setText("Analysis: Movement Maps")
+        elif self.analysis_combo.currentText() == "Bleeding Analysis":
+            self.analysis_method = "not implemented"
+            self.analysis_label.setText("Analysis: Bleeding Analysis")
+        elif self.analysis_combo.currentText() == "Anatomical Maps":
+            self.analysis_method = "not implemented"
+            self.analysis_label.setText("Analysis: Anatomical Maps")
+        elif self.analysis_combo.currentText() == "Tool Identification":
+            self.analysis_method = "not implemented"
+            self.analysis_label.setText("Analysis: Tool Identification")
+        return 0
+
+
+    def on_save_button_click(self):
+        """
+        Method to save an image result
+        :return:
+        """
+        # First, pause the video
+        if self.playing:
+            self.on_play_button_click()
+
+        # Check if save directory exists
+        aux = self.video_path[::-1].find("/")
+        data_directory = self.video_path[:-aux]
+        if not os.path.isdir(data_directory + "results/"):
+            os.mkdir(data_directory + "results/")
+
+        # Get current frame on result display
+        video_image = self.video_display.grab().toImage()
+        result_image = self.result_display.grab().toImage()
+        new_width = video_image.width() * 2
+        new_height = video_image.height()
+        concatenated_image = QImage(new_width, new_height, QImage.Format.Format_RGB32)
+        concatenated_image.fill(Qt.GlobalColor.transparent) # Fill with transparent color
+
+        # Use QPainter to paint them onto larger result
+        painter = QPainter(concatenated_image)
+        painter.drawImage(0, 0, video_image)
+        painter.drawImage(video_image.width(), 0, result_image)
+
+        default_name = (str.replace(self.analysis_combo.currentText(), " ", "_")
+                        + "_" + str(self.current_frame))
+        concatenated_image.save(data_directory + "results/" + default_name + ".jpg")
+
+
+
+        # First, check if there is a directory with results
+        print("x")
+
+    # Threads and other methods
     def play_video(self):
         """
         Thread to play video
@@ -362,6 +429,7 @@ class MainWidget(QWidget):
             self.update_image(self.current_frame)
             time.sleep(self.display_rate)
             if not self.playing:
+                self.play_button.setText("Play")
                 break
 
         return 0
@@ -426,33 +494,6 @@ class MainWidget(QWidget):
 
         self.result_display.setPixmap(QPixmap(displayed_qimage))
 
-        return 0
-
-
-    def on_drop_down_change(self):
-        """
-        Method to change current method of analysis
-        :return:
-        """
-        # Check the text in the dropdown menu and change current method
-        if self.analysis_combo.currentText() == "None":
-            self.analysis_method = None
-            self.analysis_label.setText("Analysis: None")
-        elif self.analysis_combo.currentText() == "Grayscale":
-            self.analysis_method = "grayscale"
-            self.analysis_label.setText("Analysis: Gray scale")
-        elif self.analysis_combo.currentText() == "Movement Maps":
-            self.analysis_method = "opticalflow"
-            self.analysis_label.setText("Analysis: Movement Maps")
-        elif self.analysis_combo.currentText() == "Bleeding Analysis":
-            self.analysis_method = "not implemented"
-            self.analysis_label.setText("Analysis: Bleeding Analysis")
-        elif self.analysis_combo.currentText() == "Anatomical Maps":
-            self.analysis_method = "not implemented"
-            self.analysis_label.setText("Analysis: Anatomical Maps")
-        elif self.analysis_combo.currentText() == "Tool Identification":
-            self.analysis_method = "not implemented"
-            self.analysis_label.setText("Analysis: Tool Identification")
         return 0
 
 
