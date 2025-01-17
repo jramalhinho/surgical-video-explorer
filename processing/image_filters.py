@@ -115,7 +115,7 @@ def bleeding_detector(image):
 
     # For visualisation, count the number of blood pixels
     # and establish a score
-    blood_score = (np.sum(blood_map) / 255) / np.prod(blood_map.shape)
+    blood_score = (np.sum(blood_map) / 255) / np.prod(blood_map.shape) * 100
 
     # Now mask the image
     visualisation_mask = (cv2.bitwise_not(blood_map) * 0.5).astype(np.uint8) + blood_map
