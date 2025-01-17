@@ -99,16 +99,16 @@ def bleeding_detector(image):
     image_without_spec = cv2.bitwise_and(image, image, mask=cv2.bitwise_not(spec))
 
     # Now, find all the maximum red values in pixels with low green and low blue
-    _, green_thresholded = cv2.threshold(image[:, :, 1], 10, 255, cv2.THRESH_BINARY_INV)
-    _, blue_thresholded = cv2.threshold(image[:, :, 0], 10, 255, cv2.THRESH_BINARY_INV)
+    _, green_thresholded = cv2.threshold(image_without_spec[:, :, 1], 10, 255, cv2.THRESH_BINARY_INV)
+    _, blue_thresholded = cv2.threshold(image_without_spec[:, :, 0], 10, 255, cv2.THRESH_BINARY_INV)
     only_red = cv2.bitwise_and(green_thresholded, blue_thresholded)
     # Get a map of only red pixels
-    only_red = cv2.bitwise_and(image, image, mask=only_red)
+    only_red = cv2.bitwise_and(image_without_spec, image_without_spec, mask=only_red)
     # Find the maximum
     red_threshold = np.max(only_red[:, :, 2])
     # Threshold with a percentage of max value
-    factor_to_max = 0.6
-    _, red_thresholded = cv2.threshold(image[:, :, 2], red_threshold * 0.75, 255, cv2.THRESH_BINARY)
+    factor_to_max = 0.5
+    _, red_thresholded = cv2.threshold(image_without_spec[:, :, 2], red_threshold * factor_to_max, 255, cv2.THRESH_BINARY)
 
     # Finally, create the blood map
     blood_map = cv2.bitwise_and(cv2.bitwise_and(red_thresholded, green_thresholded), blue_thresholded)
@@ -122,7 +122,7 @@ def bleeding_detector(image):
     visualisation_mask = np.tile(np.expand_dims(visualisation_mask, axis=2), (1, 1, 3))
 
     # Create a new image for visualisation
-    new_image = cv2.multiply(image, visualisation_mask, scale=1 / 255)
-    new_image[:, :, 2] = new_image[:, :, 2] + (blood_map * 0.25).astype(np.uint8)
+    new_image = cv2.multiply(image, visualisation_mask, scale=1/255)
+    new_image[:, :, 2] = new_image[:, :, 2] + (blood_map * 0.1).astype(np.uint8)
 
     return new_image, blood_score
