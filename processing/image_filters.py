@@ -88,4 +88,29 @@ def bleeding_detector(image):
     :param image: input image
     :return:
     """
-    return 0
+    # Bleeding will be detected by thresholding. To adapt the threshold for red channel,
+    # remove specularities first
+    specularity_limit = 200
+    # Find pixels that are all above 200 (white light)
+    _, red_spec = cv2.threshold(image[:, :, 2], specularity_limit, 255, cv2.THRESH_BINARY)
+    _, green_spec = cv2.threshold(image[:, :, 1], specularity_limit, 255, cv2.THRESH_BINARY)
+    _, blue_spec = cv2.threshold(image[:, :, 0], specularity_limit, 255, cv2.THRESH_BINARY)
+    spec = cv2.bitwise_and(cv2.bitwise_and(red_spec, green_spec), blue_spec)
+    image_without_spec = cv2.bitwise_and(image, image, mask=cv2.bitwise_not(spec))
+
+    # Now, find all the maximum red values in pixels with low green and low blue
+    _, green_thresholded = cv2.threshold(image[:, :, 1], 10, 255, cv2.THRESH_BINARY_INV)
+    _, blue_thresholded = cv2.threshold(image[:, :, 0], 10, 255, cv2.THRESH_BINARY_INV)
+    only_red = cv2.bitwise_and(green_thresholded, blue_thresholded)
+    # Get a map of only red pixels
+    only_red = cv2.bitwise_and(image, image, mask=only_red)
+    # Find the maximum
+    red_threshold = np.max(only_red[:, :, 2])
+    # Threshold with a percentage of max value
+    factor_to_max = 0.75
+    _, red_thresholded = cv2.threshold(image[:, :, 2], red_threshold * 0.75, 255, cv2.THRESH_BINARY)
+
+    # Finally, create the blood map
+    blood_map = cv2.bitwise_and(cv2.bitwise_and(red_thresholded, green_thresholded), blue_thresholded)
+
+    return blood_map
