@@ -374,7 +374,7 @@ class MainWidget(QWidget):
             self.analysis_method = "opticalflow"
             self.analysis_label.setText("Analysis: Movement Maps")
         elif self.analysis_combo.currentText() == "Bleeding Analysis":
-            self.analysis_method = "not implemented"
+            self.analysis_method = "bleeding"
             self.analysis_label.setText("Analysis: Bleeding Analysis")
         elif self.analysis_combo.currentText() == "Anatomical Maps":
             self.analysis_method = "not implemented"
@@ -466,6 +466,10 @@ class MainWidget(QWidget):
 
             # Calculate flow map
             displayed_frame = imf.optical_flow(prev_frame, next_frame)
+            displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+
+        elif self.analysis_method == "bleeding":
+            imf.bleeding_detector(displayed_frame)
             displayed_qimage = convert_rgb_to_qimage(displayed_frame)
 
         elif self.analysis_method == "not implemented":

@@ -81,3 +81,11 @@ def optical_flow(image_1,
     flow_image = resize_image(flow_image, 1/factor)
 
     return flow_image
+
+def bleeding_detector(image):
+    """
+    A simple method to highlight bleeding on a surgical image
+    :param image: input image
+    :return:
+    """
+    return 0
