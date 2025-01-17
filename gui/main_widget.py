@@ -26,6 +26,7 @@ class MainWidget(QWidget):
         super().__init__()
         # Define elements, first title
         self.setWindowTitle("Cholec80 Video Explorer")
+        self.set_style()
 
         # Create a background image to be placeholder (sizes are currently hardcoded, but can be changed)
         self.background_image = np.zeros((480, 854, 3), dtype=np.uint8)
@@ -565,6 +566,49 @@ class MainWidget(QWidget):
         """
         self.thread_prev_next.join()
         self.thread_current_frame.join()
+
+
+    def set_style(self):
+        """
+        Method to set the GUI style
+        """
+        self.setStyleSheet("""
+        QWidget { 
+            background-color: rgba(0, 30, 40, 1); 
+        } 
+        QPushButton {
+            background-color: rgba(148, 193, 202, 0.8); 
+            padding: 5 px;
+            color: black;
+            font-size: 13px
+        }
+        QPushButton:hover { 
+            background-color: rgba(148, 193, 202, 1.0);
+            color: black;
+        }
+        QPushButton:disabled {
+            background-color: rgba(148, 193, 202, 0.2);
+            color: rgba(0, 0, 0, 0.3);
+        }
+        QLineEdit {
+            background-color: rgba(200, 200, 200, 1.0);
+            color: black;
+        }
+        QComboBox {
+            background-color: rgba(200, 200, 200, 1.0);
+            color: black;
+        }
+        QComboBox QAbstractItemView { 
+            background-color: rgba(200, 200, 200, 1.0);
+            color: black;
+        }
+        QComboBox QAbstractItemView::item:selected { 
+            background-color: rgba(148, 193, 202, 0.8);
+            color: black;
+        }
+        
+            
+        """)
 
 
 def convert_rgb_to_qimage(rgb):
