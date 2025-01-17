@@ -123,6 +123,6 @@ def bleeding_detector(image):
 
     # Create a new image for visualisation
     new_image = cv2.multiply(image, visualisation_mask, scale=1/255)
-    new_image[:, :, 2] = new_image[:, :, 2] + (blood_map * 0.1).astype(np.uint8)
+    new_image[:, :, 2] = new_image[:, :, 2] + (blood_map * 0.3).astype(np.uint8)
 
     return new_image, blood_score
