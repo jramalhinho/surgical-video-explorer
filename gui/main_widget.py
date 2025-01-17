@@ -469,8 +469,8 @@ class MainWidget(QWidget):
             displayed_qimage = convert_rgb_to_qimage(displayed_frame)
 
         elif self.analysis_method == "bleeding":
-            imf.bleeding_detector(displayed_frame)
-            displayed_qimage = convert_rgb_to_qimage(displayed_frame)
+            blood_map, blood_score = imf.bleeding_detector(displayed_frame)
+            displayed_qimage = convert_rgb_to_qimage(blood_map)
 
         elif self.analysis_method == "not implemented":
             # Update GUI

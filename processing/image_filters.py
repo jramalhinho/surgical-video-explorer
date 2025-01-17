@@ -107,10 +107,22 @@ def bleeding_detector(image):
     # Find the maximum
     red_threshold = np.max(only_red[:, :, 2])
     # Threshold with a percentage of max value
-    factor_to_max = 0.75
+    factor_to_max = 0.6
     _, red_thresholded = cv2.threshold(image[:, :, 2], red_threshold * 0.75, 255, cv2.THRESH_BINARY)
 
     # Finally, create the blood map
     blood_map = cv2.bitwise_and(cv2.bitwise_and(red_thresholded, green_thresholded), blue_thresholded)
 
-    return blood_map
+    # For visualisation, count the number of blood pixels
+    # and establish a score
+    blood_score = (np.sum(blood_map) / 255) / np.prod(blood_map.shape)
+
+    # Now mask the image
+    visualisation_mask = (cv2.bitwise_not(blood_map) * 0.5).astype(np.uint8) + blood_map
+    visualisation_mask = np.tile(np.expand_dims(visualisation_mask, axis=2), (1, 1, 3))
+
+    # Create a new image for visualisation
+    new_image = cv2.multiply(image, visualisation_mask, scale=1 / 255)
+    new_image[:, :, 2] = new_image[:, :, 2] + (blood_map * 0.25).astype(np.uint8)
+
+    return new_image, blood_score
