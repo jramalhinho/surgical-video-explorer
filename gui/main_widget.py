@@ -108,6 +108,7 @@ class MainWidget(QWidget):
                                       "Grayscale",
                                       "Movement Maps",
                                       "Bleeding Analysis",
+                                      "Localised Bleeding",
                                       "Anatomical Maps",
                                       "Tool Identification"])
         self.analysis_combo.currentIndexChanged.connect(self.on_drop_down_change)
@@ -375,13 +376,20 @@ class MainWidget(QWidget):
             self.analysis_label.setText("Analysis: Movement Maps")
         elif self.analysis_combo.currentText() == "Bleeding Analysis":
             self.analysis_method = "bleeding"
-            self.analysis_label.setText("Analysis: Bleeding Analysis")
+            self.analysis_label.setText("Analysis: Bleeding Localised")
+        elif self.analysis_combo.currentText() == "Localised Bleeding":
+            self.analysis_method = "bleeding_localised"
+            self.analysis_label.setText("Analysis: Bleeding Localised")
         elif self.analysis_combo.currentText() == "Anatomical Maps":
             self.analysis_method = "not implemented"
             self.analysis_label.setText("Analysis: Anatomical Maps")
         elif self.analysis_combo.currentText() == "Tool Identification":
             self.analysis_method = "not implemented"
             self.analysis_label.setText("Analysis: Tool Identification")
+
+        if self.current_frame is not None:
+            self.update_results_display()
+
         return 0
 
 
@@ -479,6 +487,10 @@ class MainWidget(QWidget):
                              + f"{blood_score:.4f}" + "%")
             painter.end()
 
+        elif self.analysis_method == "bleeding_localised":
+            # Update GUI
+            displayed_frame = imf.bleeding_detector_local(displayed_frame)
+            displayed_qimage = convert_rgb_to_qimage(displayed_frame)
 
         elif self.analysis_method == "not implemented":
             # Update GUI
